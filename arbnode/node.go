@@ -1207,6 +1207,15 @@ func registerAPIs(currentNode *Node, stack *node.Node) {
 			Public: false,
 		})
 	}
+
+	//TODO: IF LIGHTCLIENT PROVER... THEN WE NEED THIS API
+	apis = append(apis, rpc.API{
+		Namespace: "lightclient",
+		Version:   "1.0",
+		Service:   &LightClientAPI{db: currentNode.ArbDB},
+		Public:    true,
+	})
+
 	stack.RegisterAPIs(apis)
 }
 

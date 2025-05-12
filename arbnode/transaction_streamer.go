@@ -1374,11 +1374,37 @@ func (s *TransactionStreamer) ExecuteNextMsg(ctx context.Context) bool {
 		log.Error("ExecuteNextMsg failed to store result", "err", err)
 		return false
 	}
+
+	chainId := s.ChainConfig().ChainID.Uint64()
+
+	fmt.Println(s.ChainConfig())
+
+	l2BlockNumber := uint64(msgIdxToExecute)
+	if chainId == 42161 {
+		l2BlockNumber += ARBITRUM_ONE_GENESIS_BLOCK
+	}
+
+	err = AddTrackingData(batch, msgIdxToExecute, &MessageTrackingL2Data{
+		L2BlockNumber: l2BlockNumber,
+		L2BlockHash:   msgResult.BlockHash,
+	})
+
+	if err != nil {
+		fmt.Println("Error adding L2 tracking data", err)
+		return false
+	}
+
+	err = SetLatestStateIndex(batch, LatestStateIndex{
+		StateIndex: msgIdxToExecute,
+	}, L2LatestStateIndexKey)
+
 	err = batch.Write()
 	if err != nil {
 		log.Error("ExecuteNextMsg failed to store result", "err", err)
 		return false
 	}
+
+	// TODO: one is here... store some values here.
 
 	msgWithBlockInfo := arbostypes.MessageWithMetadataAndBlockInfo{
 		MessageWithMeta: msgAndBlockInfo.MessageWithMeta,

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
 
+	"github.com/offchainlabs/nitro/arbos/arbostypes"
 	"github.com/offchainlabs/nitro/arbutil"
 	"github.com/offchainlabs/nitro/staker"
 	"github.com/offchainlabs/nitro/validator"
@@ -74,4 +75,62 @@ func (a *MaintenanceAPI) SecondsSinceLastMaintenance(ctx context.Context) (int64
 
 func (a *MaintenanceAPI) Trigger(ctx context.Context) error {
 	return a.runner.Trigger()
+}
+
+type LightClientAPI struct {
+	db ethdb.Database
+}
+
+func (api *LightClientAPI) GetLatestState(ctx context.Context) (*MessageTrackingL2Data, error) {
+
+	latestStateIndexL1, err := GetLatestStateIndex(api.db, L1LatestStateIndexKey)
+	latestStateIndexL2, err := GetLatestStateIndex(api.db, L2LatestStateIndexKey)
+
+	latestStateIndex := min(latestStateIndexL1.StateIndex, latestStateIndexL2.StateIndex)
+
+	if err != nil {
+		return nil, errors.New("no latest state found")
+	}
+
+	return GetTrackingDataAt[MessageTrackingL2Data](api.db, latestStateIndex)
+}
+
+type StateAtReturnData struct {
+	Message       arbostypes.L1IncomingMessage
+	L2BlockNumber uint64
+	L2BlockHash   common.Hash
+
+	L1TxHash     common.Hash
+	DataLocation batchDataLocation
+}
+
+func (api *LightClientAPI) GetStateAt(ctx context.Context, msgNum uint64) (*MessageTrackingL2Data, error) {
+	return GetTrackingDataAt[MessageTrackingL2Data](api.db, arbutil.MessageIndex(msgNum))
+}
+
+func (api *LightClientAPI) GetFullDataAt(ctx context.Context, msgNum uint64) (*StateAtReturnData, error) {
+	L1Data, err := GetTrackingDataAt[MessageTrackingL1Data](api.db, arbutil.MessageIndex(msgNum))
+	if err != nil {
+		return nil, err
+	}
+	L2Data, err := GetTrackingDataAt[MessageTrackingL2Data](api.db, arbutil.MessageIndex(msgNum))
+	if err != nil {
+		return nil, err
+	}
+
+	return &StateAtReturnData{
+		Message:       L1Data.Message,
+		L2BlockNumber: L2Data.L2BlockNumber,
+		L2BlockHash:   L2Data.L2BlockHash,
+		L1TxHash:      L1Data.L1TxHash,
+		DataLocation:  L1Data.DataLocation,
+	}, nil
+}
+
+func (api *LightClientAPI) GetLatestIndexL1(ctx context.Context) (*LatestStateIndex, error) {
+	return GetLatestStateIndex(api.db, L1LatestStateIndexKey)
+}
+
+func (api *LightClientAPI) GetLatestIndexL2(ctx context.Context) (*LatestStateIndex, error) {
+	return GetLatestStateIndex(api.db, L2LatestStateIndexKey)
 }
