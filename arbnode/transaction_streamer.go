@@ -1377,16 +1377,17 @@ func (s *TransactionStreamer) ExecuteNextMsg(ctx context.Context) bool {
 
 	chainId := s.ChainConfig().ChainID.Uint64()
 
-	fmt.Println(s.ChainConfig())
-
 	l2BlockNumber := uint64(msgIdxToExecute)
 	if chainId == 42161 {
 		l2BlockNumber += ARBITRUM_ONE_GENESIS_BLOCK
 	}
 
 	err = AddTrackingData(batch, msgIdxToExecute, &MessageTrackingL2Data{
-		L2BlockNumber: l2BlockNumber,
-		L2BlockHash:   msgResult.BlockHash,
+		L2BlockNumber:          l2BlockNumber,
+		L2BlockHash:            msgResult.BlockHash,
+		L1PricingState:         *msgResult.L1PricingState,
+		L2PricingState:         *msgResult.L2PricingState,
+		BrotliCompressionLevel: *msgResult.BrotliCompressionLevel,
 	})
 
 	if err != nil {
@@ -1397,6 +1398,11 @@ func (s *TransactionStreamer) ExecuteNextMsg(ctx context.Context) bool {
 	err = SetLatestStateIndex(batch, LatestStateIndex{
 		StateIndex: msgIdxToExecute,
 	}, L2LatestStateIndexKey)
+
+	if err != nil {
+		fmt.Println("Error setting latest state index", err)
+		return false
+	}
 
 	err = batch.Write()
 	if err != nil {

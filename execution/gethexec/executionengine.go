@@ -1027,6 +1027,20 @@ func (s *ExecutionEngine) digestMessageWithBlockMutex(msgIdxToDigest arbutil.Mes
 	if err != nil {
 		return nil, err
 	}
+
+	arbState, err := arbosState.OpenSystemArbosState(statedb, nil, true)
+	if err != nil {
+		return nil, err
+	}
+
+	msgResult.L1PricingState = arbState.L1PricingState()
+	msgResult.L2PricingState = arbState.L2PricingState()
+	brotliCompressionLevel, err := arbState.BrotliCompressionLevel()
+	if err != nil {
+		return nil, err
+	}
+	msgResult.BrotliCompressionLevel = &brotliCompressionLevel
+
 	return msgResult, nil
 }
 

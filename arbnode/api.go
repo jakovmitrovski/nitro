@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 
 	"github.com/offchainlabs/nitro/arbos/arbostypes"
+	"github.com/offchainlabs/nitro/arbos/l1pricing"
+	"github.com/offchainlabs/nitro/arbos/l2pricing"
 	"github.com/offchainlabs/nitro/arbutil"
 	"github.com/offchainlabs/nitro/staker"
 	"github.com/offchainlabs/nitro/validator"
@@ -84,21 +86,26 @@ type LightClientAPI struct {
 func (api *LightClientAPI) GetLatestState(ctx context.Context) (*MessageTrackingL2Data, error) {
 
 	latestStateIndexL1, err := GetLatestStateIndex(api.db, L1LatestStateIndexKey)
+	if err != nil {
+		return nil, err
+	}
 	latestStateIndexL2, err := GetLatestStateIndex(api.db, L2LatestStateIndexKey)
+	if err != nil {
+		return nil, err
+	}
 
 	latestStateIndex := min(latestStateIndexL1.StateIndex, latestStateIndexL2.StateIndex)
-
-	if err != nil {
-		return nil, errors.New("no latest state found")
-	}
 
 	return GetTrackingDataAt[MessageTrackingL2Data](api.db, latestStateIndex)
 }
 
 type StateAtReturnData struct {
-	Message       arbostypes.L1IncomingMessage
-	L2BlockNumber uint64
-	L2BlockHash   common.Hash
+	Message                arbostypes.L1IncomingMessage
+	L2BlockNumber          uint64
+	L2BlockHash            common.Hash
+	L1PricingState         l1pricing.L1PricingState
+	L2PricingState         l2pricing.L2PricingState
+	BrotliCompressionLevel uint64
 
 	L1TxHash     common.Hash
 	DataLocation batchDataLocation
@@ -119,11 +126,14 @@ func (api *LightClientAPI) GetFullDataAt(ctx context.Context, msgNum uint64) (*S
 	}
 
 	return &StateAtReturnData{
-		Message:       L1Data.Message,
-		L2BlockNumber: L2Data.L2BlockNumber,
-		L2BlockHash:   L2Data.L2BlockHash,
-		L1TxHash:      L1Data.L1TxHash,
-		DataLocation:  L1Data.DataLocation,
+		Message:                L1Data.Message,
+		L2BlockNumber:          L2Data.L2BlockNumber,
+		L2BlockHash:            L2Data.L2BlockHash,
+		L1TxHash:               L1Data.L1TxHash,
+		DataLocation:           L1Data.DataLocation,
+		L1PricingState:         L2Data.L1PricingState,
+		L2PricingState:         L2Data.L2PricingState,
+		BrotliCompressionLevel: L2Data.BrotliCompressionLevel,
 	}, nil
 }
 
