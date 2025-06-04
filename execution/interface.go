@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 
 	"github.com/offchainlabs/nitro/arbos/arbostypes"
-	"github.com/offchainlabs/nitro/arbos/l1pricing"
-	"github.com/offchainlabs/nitro/arbos/l2pricing"
 	"github.com/offchainlabs/nitro/arbutil"
 	"github.com/offchainlabs/nitro/util/containers"
 )
@@ -17,11 +15,6 @@ import (
 type MessageResult struct {
 	BlockHash common.Hash
 	SendRoot  common.Hash
-
-	// 3 optional fields
-	L1PricingState         *l1pricing.L1PricingState
-	L2PricingState         *l2pricing.L2PricingState
-	BrotliCompressionLevel *uint64
 }
 
 type RecordResult struct {

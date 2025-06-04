@@ -7,8 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/offchainlabs/nitro/arbos/arbostypes"
-	"github.com/offchainlabs/nitro/arbos/l1pricing"
-	"github.com/offchainlabs/nitro/arbos/l2pricing"
 	"github.com/offchainlabs/nitro/arbutil"
 )
 
@@ -35,11 +33,8 @@ type MessageTrackingL1Data struct {
 
 // L2 Tracking
 type MessageTrackingL2Data struct {
-	L2BlockNumber          uint64
-	L2BlockHash            common.Hash
-	L1PricingState         l1pricing.L1PricingState
-	L2PricingState         l2pricing.L2PricingState
-	BrotliCompressionLevel uint64
+	L2BlockNumber uint64
+	L2BlockHash   common.Hash
 }
 
 type LatestStateIndex struct {
