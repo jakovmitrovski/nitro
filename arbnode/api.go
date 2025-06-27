@@ -84,13 +84,16 @@ type LightClientAPI struct {
 func (api *LightClientAPI) GetLatestState(ctx context.Context) (*MessageTrackingL2Data, error) {
 
 	latestStateIndexL1, err := GetLatestStateIndex(api.db, L1LatestStateIndexKey)
+	if err != nil {
+		return nil, err
+	}
+
 	latestStateIndexL2, err := GetLatestStateIndex(api.db, L2LatestStateIndexKey)
+	if err != nil {
+		return nil, err
+	}
 
 	latestStateIndex := min(latestStateIndexL1.StateIndex, latestStateIndexL2.StateIndex)
-
-	if err != nil {
-		return nil, errors.New("no latest state found")
-	}
 
 	return GetTrackingDataAt[MessageTrackingL2Data](api.db, latestStateIndex)
 }
@@ -102,10 +105,6 @@ type StateAtReturnData struct {
 
 	L1TxHash     common.Hash
 	DataLocation batchDataLocation
-}
-
-func (api *LightClientAPI) GetStateAt(ctx context.Context, msgNum uint64) (*MessageTrackingL2Data, error) {
-	return GetTrackingDataAt[MessageTrackingL2Data](api.db, arbutil.MessageIndex(msgNum))
 }
 
 func (api *LightClientAPI) GetFullDataAt(ctx context.Context, msgNum uint64) (*StateAtReturnData, error) {
@@ -133,4 +132,12 @@ func (api *LightClientAPI) GetLatestIndexL1(ctx context.Context) (*LatestStateIn
 
 func (api *LightClientAPI) GetLatestIndexL2(ctx context.Context) (*LatestStateIndex, error) {
 	return GetLatestStateIndex(api.db, L2LatestStateIndexKey)
+}
+
+func (api *LightClientAPI) GetL1DataAt(ctx context.Context, msgNum uint64) (*MessageTrackingL1Data, error) {
+	return GetTrackingDataAt[MessageTrackingL1Data](api.db, arbutil.MessageIndex(msgNum))
+}
+
+func (api *LightClientAPI) GetL2DataAt(ctx context.Context, msgNum uint64) (*MessageTrackingL2Data, error) {
+	return GetTrackingDataAt[MessageTrackingL2Data](api.db, arbutil.MessageIndex(msgNum))
 }

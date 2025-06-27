@@ -1377,12 +1377,14 @@ func (s *TransactionStreamer) ExecuteNextMsg(ctx context.Context) bool {
 
 	chainId := s.ChainConfig().ChainID.Uint64()
 
-	fmt.Println(s.ChainConfig())
-
 	l2BlockNumber := uint64(msgIdxToExecute)
 	if chainId == 42161 {
 		l2BlockNumber += ARBITRUM_ONE_GENESIS_BLOCK
 	}
+
+	fmt.Println("Adding L2 tracking data", msgIdxToExecute)
+	fmt.Println("L2 block number", l2BlockNumber)
+	fmt.Println("L2 block hash", msgResult.BlockHash)
 
 	err = AddTrackingData(batch, msgIdxToExecute, &MessageTrackingL2Data{
 		L2BlockNumber: l2BlockNumber,
@@ -1394,15 +1396,45 @@ func (s *TransactionStreamer) ExecuteNextMsg(ctx context.Context) bool {
 		return false
 	}
 
+	fmt.Println("Added L2 tracking data", msgIdxToExecute)
+
+	fmt.Println("Setting latest state index", msgIdxToExecute)
+
 	err = SetLatestStateIndex(batch, LatestStateIndex{
 		StateIndex: msgIdxToExecute,
 	}, L2LatestStateIndexKey)
 
-	err = batch.Write()
 	if err != nil {
+		fmt.Println("Error setting latest state index", err)
+		return false
+	}
+
+	fmt.Println("Set latest state index", msgIdxToExecute)
+
+	err = batch.Write()
+
+	if err != nil {
+		fmt.Println("Error writing batch", err)
 		log.Error("ExecuteNextMsg failed to store result", "err", err)
 		return false
 	}
+
+	fmt.Println("Wrote batch", msgIdxToExecute)
+
+	readVal, err := GetLatestStateIndex(s.db, L2LatestStateIndexKey)
+	if err != nil {
+		fmt.Println("Error getting latest state index", err)
+		return false
+	}
+	fmt.Println("Read latest state index", readVal)
+
+	BlockHash, err := GetTrackingDataAt[MessageTrackingL2Data](s.db, msgIdxToExecute)
+	if err != nil {
+		fmt.Println("Error getting block hash", err)
+		return false
+	}
+	fmt.Println("Block hash", BlockHash.L2BlockHash)
+	fmt.Println("Block number", BlockHash.L2BlockNumber)
 
 	// TODO: one is here... store some values here.
 

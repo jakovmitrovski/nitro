@@ -766,6 +766,8 @@ func (t *InboxTracker) AddSequencerBatches(ctx context.Context, client *ethclien
 			break
 		}
 		batchSeqNum := backend.batches[0].SequenceNumber
+		l1TxHash := backend.batches[0].rawLog.TxHash
+		dataLocation := backend.batches[0].dataLocation
 		msg, err := multiplexer.Pop(ctx)
 		if err != nil {
 			return err
@@ -775,26 +777,24 @@ func (t *InboxTracker) AddSequencerBatches(ctx context.Context, client *ethclien
 		messages = append(messages, *msg)
 		batchMessageCounts[batchSeqNum] = currentpos
 
-		if len(backend.batches) == 0 {
-			break
-		}
+		fmt.Println("Adding L1 tracking data", currentpos)
 
 		err = AddTrackingData(dbBatch, currentpos, &MessageTrackingL1Data{
 			Message:      *msg.Message,
-			L1TxHash:     backend.batches[0].rawLog.TxHash,
-			DataLocation: backend.batches[0].dataLocation,
+			L1TxHash:     l1TxHash,
+			DataLocation: dataLocation,
 		})
-
 		if err != nil {
 			fmt.Println("Error adding L1 tracking data", err)
 			return err
 		}
+		fmt.Println("Added L1 tracking data", currentpos)
 
 		currentpos += 1
 	}
 
 	err = SetLatestStateIndex(dbBatch, LatestStateIndex{
-		StateIndex: prevbatchmeta.MessageCount,
+		StateIndex: currentpos,
 	}, L1LatestStateIndexKey)
 
 	if err != nil {
